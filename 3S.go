@@ -14,29 +14,26 @@ import (
         "io"
 )
 
-
+//Function DownloadFile() copy from :
+//https://golangcode.com/download-a-file-from-a-url/
 func DownloadFile(filepath string, url string) error {
-
     // Create the file
     out, err := os.Create(filepath)
     if err != nil {
         return err
     }
     defer out.Close()
-
     // Get the data
     resp, err := http.Get(url)
     if err != nil {
         return err
     }
     defer resp.Body.Close()
-
     // Write the body to file
     _, err = io.Copy(out, resp.Body)
     if err != nil {
         return err
     }
-
     return nil
 }
 
@@ -94,12 +91,13 @@ func GetLabel(device *udev.Device) (bool,[]string) {
 }
 
 func LabeliseNode(device *udev.Device, label []string) {
+  hostname, _ := os.Hostname()
   endofcmd := "=yes"
   for _ , lab := range label {
     if device.Action() == "remove" {
       endofcmd = "-"
     }
-    cmd := exec.Command("kubectl", "label","nodes","masterone",lab+endofcmd)
+    cmd := exec.Command("kubectl", "label","nodes",hostname,lab+endofcmd)
     out, err := cmd.CombinedOutput()
     if err != nil {
       log.Print("label command failed with",string(out))
