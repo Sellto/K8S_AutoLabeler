@@ -9,20 +9,65 @@ import (
         "context"
         "sync"
         "os/exec"
+        "net/http"
+        "os"
+        "io"
 )
 
+
+func DownloadFile(filepath string, url string) error {
+
+    // Create the file
+    out, err := os.Create(filepath)
+    if err != nil {
+        return err
+    }
+    defer out.Close()
+
+    // Get the data
+    resp, err := http.Get(url)
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+
+    // Write the body to file
+    _, err = io.Copy(out, resp.Body)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func UpdateDB(file string) map[string][]map[string]interface{} {
-  //Read yaml file.
-  yamlFile, err := ioutil.ReadFile(file)
+  err := DownloadFile("rollup_db.yaml","https://raw.githubusercontent.com/Sellto/K8S_AutoLabeler/master/db.yaml")
   if err != nil {
-    log.Printf("yamlFile.Get err   #%v ", err)
+      log.Printf("update db error:",err)
   }
-  //Parse into a map of list of maps
   db := make(map[string][]map[string]interface{})
+  var yamlFile []byte
+  yamlFile, err = ioutil.ReadFile("rollup_db.yaml")
+  if err != nil {
+    log.Printf("downloaded file cannot be read")
+  }
   err = yaml.Unmarshal([]byte(yamlFile), &db)
   if err != nil {
-    log.Fatalf("error: %v", err)
+    log.Printf("error when try to parse the downloaded database")
+    log.Printf("try to read a older local version")
+    yamlFile, err = ioutil.ReadFile(file)
+    if err != nil {
+        log.Printf("can't find the db.yaml file")
+    }
+    err = yaml.Unmarshal([]byte(yamlFile), &db)
+    if err != nil {
+      log.Fatalf("check the db.yaml format")
+    }
+  } else {
+    os.Remove("db.yaml")
+    os.Rename("rollup_db.yaml",file)
   }
+  //Parse into a map of list of maps
   return db
 }
 
@@ -30,11 +75,11 @@ func UpdateDB(file string) map[string][]map[string]interface{} {
 func GetLabel(device *udev.Device) (bool,[]string) {
   db := UpdateDB("db.yaml")
   log.Println("device :",device.PropertyValue("ID_VENDOR"),"-",device.PropertyValue("ID_MODEL"))
-  log.Println("path:",d.PropertyValue("DEVNAME"))
+  log.Println("path:",device.PropertyValue("DEVNAME"))
   for key, value := range db {
-    if key == d.PropertyValue("ID_VENDOR_ID")+":"+device.PropertyValue("ID_MODEL_ID"){
+    if key == device.PropertyValue("ID_VENDOR_ID")+":"+device.PropertyValue("ID_MODEL_ID"){
       for _,description := range value {
-        if description["Manufacturer"] == device.PropertyValue("ID_VENDOR") && description["Product"] == d.PropertyValue("ID_MODEL") {
+        if description["Manufacturer"] == device.PropertyValue("ID_VENDOR") && description["Product"] == device.PropertyValue("ID_MODEL") {
             label_db := description["Label"].([]interface{})
             label_list := make([]string, len(label_db))
             for i, v := range label_db {
@@ -46,7 +91,7 @@ func GetLabel(device *udev.Device) (bool,[]string) {
     }
   }
   return false, []string{}
-}d
+}
 
 func LabeliseNode(device *udev.Device, label []string) {
   endofcmd := "=yes"
@@ -59,7 +104,7 @@ func LabeliseNode(device *udev.Device, label []string) {
     if err != nil {
       log.Print("label command failed with",string(out))
     } else {
-      log.Println(d.Action(),"label:",lab)
+      log.Println(device.Action(),"label:",lab)
     }
   }
 }
