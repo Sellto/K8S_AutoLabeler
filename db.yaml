@@ -1,0 +1,23 @@
+10c4:ea60:
+  - Manufacturer : "Silicon_Labs"
+    Product : "Zolertia_Firefly_platform"
+    Label:
+      - "IEEE_802_15_4"
+  - Manufacturer : "Silicon_Labs"
+    Product : "Zolertia_Z1"
+    Label:
+      - "IEEE_802_15_4"
+0451:bef3:
+  - Manufacturer : "Texas_Instruments"
+    Product : "XDS110__02.02.04.01__with_CMSIS-DAP"
+    Label:
+      - "IEEE_802_15_4"
+0403:6001:
+  - Manufacturer : "XBOW"
+    Product : "Crossbow_Telos_Rev.B"
+    Label:
+      - "IEEE_802_15_4"
+  - Manufacturer : "FTDI"
+    Product : "MTM-CM5000MSP"
+    Label:
+      - "IEEE_802_15_4"
