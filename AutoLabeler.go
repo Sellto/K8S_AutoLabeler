@@ -97,7 +97,9 @@ func LabeliseNode(device *udev.Device, label []string) {
     if device.Action() == "remove" {
       endofcmd = "-"
     }
-    cmd := exec.Command("kubectl", "label","nodes",hostname,lab+endofcmd)
+    nodehost := exec.Command("kubectl","get","pod","-o","wide","|", "grep",hostname,"|","awk","'{print $7}'")
+    out2, err := nodehost.CombinedOutput()
+    cmd := exec.Command("kubectl", "label","nodes",string(out2),lab+endofcmd)
     out, err := cmd.CombinedOutput()
     if err != nil {
       log.Print("label command failed with",string(out))
