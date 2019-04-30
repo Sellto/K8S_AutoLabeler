@@ -112,8 +112,8 @@ func main() {
   myudev := udev.Udev{}
   enum := myudev.NewEnumerate()
   fmt.Println("Already plugged interface :")
-  enum.AddMatchSubsystem("tty")
-  enum.AddMatchIsInitialized()
+enum.AddMatchSubsystem("tty")
+ enum.AddMatchIsInitialized()
   devices, _ := enum.Devices()
   for _,device := range devices {
     parent := device.ParentWithSubsystemDevtype("usb", "usb_device")
