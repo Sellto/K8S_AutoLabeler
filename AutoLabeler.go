@@ -12,6 +12,9 @@ import (
         "net/http"
         "os"
         "io"
+        "bytes"
+        "strings"
+        "errors"
 )
 
 //Function DownloadFile() copy from :
@@ -90,16 +93,51 @@ func GetLabel(device *udev.Device) (bool,[]string) {
   return false, []string{}
 }
 
+
+func Pipe(c1,c2 *exec.Cmd) string {
+  var out bytes.Buffer
+  r1, w1 := io.Pipe()
+  c1.Stdout = w1
+  c2.Stdin = r1
+  c2.Stdout = &out
+  c1.Start()
+  c2.Start()
+  c1.Wait()
+  w1.Close()
+  c2.Wait()
+  return out.String()
+}
+
+func extractNodeHost(stdout string) (string,error) {
+  splited_stdout := strings.Split(stdout," ")
+  cleaned_stdout := []string{}
+  for _,value := range splited_stdout {
+    if value != "" {
+      cleaned_stdout = append(cleaned_stdout,value)
+    }
+  }
+  if len(cleaned_stdout) > 6 {
+    return cleaned_stdout[6],nil
+  } else {
+    return "no way",errors.New("Can't Extract data")
+  }
+}
+
 func LabeliseNode(device *udev.Device, label []string) {
   hostname, _ := os.Hostname()
+  c1 := exec.Command("kubectl","get","pod","-o","wide")
+  c2 := exec.Command("grep", hostname)
+  result := Pipe(c1,c2)
+  nodehost,err := extractNodeHost(result)
+  if err != nil {
+      log.Println(err)
+  }
   endofcmd := "=yes"
   for _ , lab := range label {
     if device.Action() == "remove" {
       endofcmd = "-"
     }
-    nodehost := exec.Command("kubectl","get","pod","-o","wide","|", "grep",hostname,"|","awk","'{print $7}'")
-    out2, err := nodehost.CombinedOutput()
-    cmd := exec.Command("kubectl", "label","nodes",string(out2),lab+endofcmd)
+    cmd := exec.Command("kubectl", "label","nodes",nodehost,lab+endofcmd)
     out, err := cmd.CombinedOutput()
     if err != nil {
       log.Print("label command failed with",string(out))
