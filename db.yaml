@@ -21,3 +21,8 @@
     Product : "MTM-CM5000MSP"
     Label:
       - "IEEE_802_15_4"
+0658:0200:
+  - Manufacturer : "Aeon Labs"
+    Product : "Z-Stick GEN5"
+    Label:
+      - "Z_Wave"
